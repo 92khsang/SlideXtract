@@ -1,11 +1,15 @@
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from typing import TypeAlias, TYPE_CHECKING
+
+from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.shapes.shapetree import GroupShapes
 
 from slidextract.wrapper.models import SlideSize, BBox
 
 if TYPE_CHECKING:
-    from pptx.enum.shapes import MSO_SHAPE_TYPE
-    from pptx.shapes.shapetree import _BaseGroupShapes, GroupShapes
+    from pptx.shapes.shapetree import _BaseGroupShapes
     from pptx.shapes.autoshape import Shape as AutoShape
     from pptx.shapes.base import BaseShape
     from pptx.shapes.graphfrm import GraphicFrame

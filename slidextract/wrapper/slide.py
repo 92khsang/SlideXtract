@@ -45,7 +45,6 @@ class SlideWrapper:
     valid: bool = field(init=False)
 
     def __post_init__(self):
-        object.__setattr__(self, "valid", self._validate())
         object.__setattr__(
             self,
             "shapes",
@@ -54,6 +53,7 @@ class SlideWrapper:
                 for shape in self.slide.shapes
             ],
         )
+        object.__setattr__(self, "valid", self._validate())
 
     def _validate(self) -> bool:
         return self.total_shapes >= self.slide_filter.min_shapes
