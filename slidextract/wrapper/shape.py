@@ -8,6 +8,7 @@ from pptx.shapes.group import GroupShape
 from pptx.shapes.shapetree import GroupShapes
 
 from slidextract.wrapper.models import SlideSize, BBox
+from slidextract.wrapper.table import TableWrapper
 
 if TYPE_CHECKING:
     from pptx.shapes.shapetree import _BaseGroupShapes
@@ -56,6 +57,7 @@ class ShapeWrapper:
     filter: ShapeFilter
     bbox: BBox = field(init=False)
     valid: bool = field(init=False)
+    table: TableWrapper | None = field(init=False)
 
     _shapes: _BaseGroupShapes = field(init=False)
     _parent: Shape | Slide = field(init=False)
@@ -63,6 +65,12 @@ class ShapeWrapper:
     def __post_init__(self):
         object.__setattr__(self, "_shapes", getattr(self.shape, "_parent", None))
         object.__setattr__(self, "_parent", getattr(self._shapes, "_parent", None))
+
+        object.__setattr__(
+            self,
+            "table",
+            TableWrapper(self.shape.table) if self.shape.has_table else None,
+        )
 
         object.__setattr__(self, "bbox", self._calculate_bbox())
         object.__setattr__(self, "valid", self._validate())
