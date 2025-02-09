@@ -82,10 +82,13 @@ class ShapeWrapper:
             and self.shape.shape_type not in self.filter.exclude_types
             and (
                 self.filter.include_empty_textbox
-                or not self.type == MSO_SHAPE_TYPE.TEXT_BOX
+                or not self.shape_type == MSO_SHAPE_TYPE.TEXT_BOX
                 or self.has_text
             )
         )
+
+    def __getattr__(self, item):
+        return getattr(self.shape, item)
 
     def _calculate_bbox(self) -> BBox:
         offset_x, offset_y, scale_x, scale_y = self._calculate_group_factors()
@@ -132,10 +135,6 @@ class ShapeWrapper:
                 offset_y = group_offset_y - ch_off_y
 
         return offset_x, offset_y, scale_x, scale_y
-
-    @property
-    def type(self):
-        return self.shape.shape_type
 
     @property
     def has_text(self):

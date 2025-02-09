@@ -25,20 +25,15 @@ class PresentationWrapper:
                 SlideWrapper(
                     slide,
                     self.presentation.slides.index(slide) + 1,
-                    SlideSize(self.width, self.height),
+                    SlideSize(self.slide_width, self.slide_height),
                     self.slide_filter,
                 )
                 for slide in self.presentation.slides
             ],
         )
 
-    @property
-    def width(self) -> int:
-        return self.presentation.slide_width
-
-    @property
-    def height(self) -> int:
-        return self.presentation.slide_height
+    def __getattr__(self, item):
+        return getattr(self.presentation, item)
 
     @property
     def total_slides(self) -> int:

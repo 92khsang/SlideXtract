@@ -16,13 +16,5 @@ class TableWrapper:
 
     table: Table
 
-    @property
-    def rows(self):
-        return self.table.rows
-
-    @property
-    def columns(self):
-        return self.table.columns
-
-    def cell(self, row_idx: int, col_idx: int):
-        return self.table.cell(row_idx, col_idx)
+    def __getattr__(self, name):
+        return getattr(self.table, name)

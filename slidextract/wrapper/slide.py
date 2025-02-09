@@ -65,6 +65,9 @@ class SlideWrapper:
 
         self._logger.debug(f"Slide number: {self.number}, valid: {self.valid}")
 
+    def __getattr__(self, item):
+        return getattr(self.slide, item)
+
     def _validate(self) -> bool:
         return self.total_shapes >= self.filter.min_shapes
 
