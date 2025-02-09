@@ -4,22 +4,39 @@ from dataclasses import dataclass, field
 
 from pptx import Presentation
 
-from slidextract.utils import emu_to_pixels
+from slidextract.wrapper.models import SlideSize
+from slidextract.wrapper.slide import SlideWrapper, SlideFilter
 
 
 @dataclass(frozen=True, slots=True)
 class PresentationWrapper:
     pptx_path: str
+    slide_filter: SlideFilter
 
     presentation: Presentation = field(init=False)
+    slides: list[SlideWrapper] = field(init=False)
 
     def __post_init__(self):
         object.__setattr__(self, "presentation", Presentation(self.pptx_path))
+        object.__setattr__(
+            self,
+            "slides",
+            [
+                SlideWrapper(
+                    slide, SlideSize(self.width, self.height), self.slide_filter
+                )
+                for slide in self.presentation.slides
+            ],
+        )
 
     @property
-    def width(self) -> float:
-        return emu_to_pixels(self.presentation.slide_width)
+    def width(self) -> int:
+        return self.presentation.slide_width
 
     @property
-    def height(self) -> float:
-        return emu_to_pixels(self.presentation.slide_height)
+    def height(self) -> int:
+        return self.presentation.slide_height
+
+    @property
+    def total_slides(self) -> int:
+        return len(self.slides)
