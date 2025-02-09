@@ -4,6 +4,7 @@ from dataclasses import dataclass, field
 from typing import TypeAlias, TYPE_CHECKING
 
 from pptx.enum.shapes import MSO_SHAPE_TYPE
+from pptx.shapes.group import GroupShape
 from pptx.shapes.shapetree import GroupShapes
 
 from slidextract.wrapper.models import SlideSize, BBox
@@ -13,7 +14,6 @@ if TYPE_CHECKING:
     from pptx.shapes.autoshape import Shape as AutoShape
     from pptx.shapes.base import BaseShape
     from pptx.shapes.graphfrm import GraphicFrame
-    from pptx.shapes.group import GroupShape
     from pptx.shapes.picture import Picture
     from pptx.slide import Slide
 
@@ -132,3 +132,12 @@ class ShapeWrapper:
     @property
     def has_text(self):
         return self.shape.has_text_frame and self.shape.text.strip() != ""
+
+    @property
+    def children(self) -> list[ShapeWrapper]:
+        if not isinstance(self.shape, GroupShape):
+            return []
+        return [
+            ShapeWrapper(child, self.slide_size, shape_filter=self.shape_filter)
+            for child in self.shape.shapes
+        ]
