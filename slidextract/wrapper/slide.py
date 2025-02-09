@@ -3,10 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
+from slidextract.core.logging import get_logger
 from slidextract.wrapper.models import SlideSize
 from slidextract.wrapper.shape import ShapeWrapper, ShapeFilter
 
 if TYPE_CHECKING:
+    from logging import Logger
+
     from pptx.slide import Slide
 
 
@@ -31,32 +34,39 @@ class SlideWrapper:
 
     Attributes:
         slide: Original slide
-        slide_size: Size of the slide
-        slide_filter: Filter conditions for extracting shape
+        number: Number of the slide
+        size: Size of the slide
+        filter: Filter conditions for extracting shape
         shapes: List of extracted shapes
         valid: Whether the slide is valid
     """
 
     slide: Slide
-    slide_size: SlideSize
-    slide_filter: SlideFilter
+    number: int
+    size: SlideSize
+    filter: SlideFilter
 
     shapes: list[ShapeWrapper] = field(init=False)
     valid: bool = field(init=False)
 
+    _logger: Logger = field(default_factory=lambda: get_logger(__name__))
+
     def __post_init__(self):
+
         object.__setattr__(
             self,
             "shapes",
             [
-                ShapeWrapper(shape, self.slide_size, self.slide_filter.shape_filter)
+                ShapeWrapper(shape, self.size, self.filter.shape_filter)
                 for shape in self.slide.shapes
             ],
         )
         object.__setattr__(self, "valid", self._validate())
 
+        self._logger.debug(f"Slide number: {self.number}, valid: {self.valid}")
+
     def _validate(self) -> bool:
-        return self.total_shapes >= self.slide_filter.min_shapes
+        return self.total_shapes >= self.filter.min_shapes
 
     @property
     def total_shapes(self) -> int:

@@ -46,14 +46,14 @@ class ShapeWrapper:
     Attributes:
         shape: Original shape
         slide_size: Size of the slide
-        shape_filter: Filter conditions for extracting shape
+        filter: Filter conditions for extracting shape
         bbox: Bounding box of the shape
         valid: Whether the shape is valid
     """
 
     shape: Shape
     slide_size: SlideSize
-    shape_filter: ShapeFilter
+    filter: ShapeFilter
     bbox: BBox = field(init=False)
     valid: bool = field(init=False)
 
@@ -69,11 +69,11 @@ class ShapeWrapper:
 
     def _validate(self):
         return (
-            self.shape_filter.min_width <= self.bbox.width
-            and self.shape_filter.min_height <= self.bbox.height
-            and self.shape.shape_type not in self.shape_filter.exclude_types
+            self.filter.min_width <= self.bbox.width
+            and self.filter.min_height <= self.bbox.height
+            and self.shape.shape_type not in self.filter.exclude_types
             and (
-                self.shape_filter.include_empty_textbox
+                self.filter.include_empty_textbox
                 or not self.type == MSO_SHAPE_TYPE.TEXT_BOX
                 or self.has_text
             )
@@ -138,6 +138,6 @@ class ShapeWrapper:
         if not isinstance(self.shape, GroupShape):
             return []
         return [
-            ShapeWrapper(child, self.slide_size, shape_filter=self.shape_filter)
+            ShapeWrapper(child, self.slide_size, filter=self.filter)
             for child in self.shape.shapes
         ]

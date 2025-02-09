@@ -23,7 +23,10 @@ class PresentationWrapper:
             "slides",
             [
                 SlideWrapper(
-                    slide, SlideSize(self.width, self.height), self.slide_filter
+                    slide,
+                    self.presentation.slides.index(slide) + 1,
+                    SlideSize(self.width, self.height),
+                    self.slide_filter,
                 )
                 for slide in self.presentation.slides
             ],
