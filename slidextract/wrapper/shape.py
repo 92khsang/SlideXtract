@@ -7,6 +7,7 @@ from pptx.enum.shapes import MSO_SHAPE_TYPE
 from pptx.shapes.group import GroupShape
 from pptx.shapes.shapetree import GroupShapes
 
+from slidextract.wrapper.chart import ChartWrapper
 from slidextract.wrapper.models import SlideSize, BBox
 from slidextract.wrapper.table import TableWrapper
 
@@ -58,6 +59,7 @@ class ShapeWrapper:
     bbox: BBox = field(init=False)
     valid: bool = field(init=False)
     table: TableWrapper | None = field(init=False)
+    chart: ChartWrapper | None = field(init=False)
 
     _shapes: _BaseGroupShapes = field(init=False)
     _parent: Shape | Slide = field(init=False)
@@ -70,6 +72,11 @@ class ShapeWrapper:
             self,
             "table",
             TableWrapper(self.shape.table) if self.shape.has_table else None,
+        )
+        object.__setattr__(
+            self,
+            "chart",
+            ChartWrapper(self.shape.chart) if self.shape.has_chart else None,
         )
 
         object.__setattr__(self, "bbox", self._calculate_bbox())

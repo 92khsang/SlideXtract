@@ -63,8 +63,6 @@ class SlideWrapper:
         )
         object.__setattr__(self, "valid", self._validate())
 
-        self._logger.debug(f"Slide number: {self.number}, valid: {self.valid}")
-
     def __getattr__(self, item):
         return getattr(self.slide, item)
 
