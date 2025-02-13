@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import re
+from collections import deque
 from datetime import datetime, timedelta
 from typing import Callable, TypeAlias
-
-from typing_extensions import overload
 
 from slidextract.core.logging import get_logger
 from slidextract.formatter import common
@@ -64,21 +63,6 @@ FORMAT_MAPPER = TimeFormatMapper(
         },
     }
 )
-
-
-def _remove_quotes(section: FormatSection):
-    temp_container: list[SectionPart] = []
-
-    while section.parts:
-        part = section.parts.popleft()
-        if part.type == SectionPartType.TEXT:
-            temp_container.append(
-                SectionPart(type=SectionPartType.TEXT, value=part.value.strip('"'))
-            )
-        else:
-            temp_container.append(part)
-
-    section.parts.extend(temp_container)
 
 
 def _merge_elapse_parts(section: FormatSection):
@@ -227,18 +211,17 @@ def is_date_format(format_str: str | None) -> bool:
     return bool(re.search(DATE_PATTERN, format_str))
 
 
-def parse_format(sections: str | list[str]) -> FormatSections:
+def parse_format(format_str: str) -> FormatSections:
     """Parses the format string into its respective sections.
 
     Args:
-        sections (list[str]): The format string to parse.
+        format_str (str): The format string to parse.
 
     Returns:
         FormatSections: The parsed format sections.
     """
 
-    if isinstance(sections, str):
-        sections = sections.split(";")
+    sections = format_str.split(";")
 
     if len(sections) > 1:
         _logger.debug(f"Date format has more than one section. ({len(sections)})")
@@ -247,12 +230,17 @@ def parse_format(sections: str | list[str]) -> FormatSections:
             "In the case of date format, it should have a single section."
         )
 
-    section = FormatSection(raw=sections[0])
-    section.parts.append(SectionPart(type=SectionPartType.RAW, value=sections[0]))
+    if not is_date_format(sections[0]):
+        raise UnsupportedFormat("The format string is not a date format.")
+
+    section = FormatSection(
+        raw=sections[0],
+        parts=deque([SectionPart(type=SectionPartType.RAW, value=sections[0])]),
+    )
 
     common.parse_parts(section, r"\s+", SectionPartType.SPACE)
     common.parse_parts(section, common.QUOTE_PATTERN, SectionPartType.TEXT)
-    _remove_quotes(section)
+    common.remove_quotes(section)
 
     common.parse_parts(section, DATE_PATTERN, SectionPartType.TIME)
     _merge_elapse_parts(section)
@@ -263,16 +251,6 @@ def parse_format(sections: str | list[str]) -> FormatSections:
     _finalize_date_parts(section)
 
     return FormatSections([section])
-
-
-@overload
-def apply_format(value: int | float, formats: FormatSections) -> str:
-    ...
-
-
-@overload
-def apply_format(value: int | float, formats: str | list[str]) -> str:
-    ...
 
 
 def _convert_format(value: datetime, days: float, format_section: FormatSection) -> str:
@@ -303,10 +281,10 @@ def _convert_format(value: datetime, days: float, format_section: FormatSection)
     return "".join(buffer)
 
 
-def apply_format(value: int | float, formats: str | list[str] | FormatSections) -> str:
+def apply_format(value: int | float, formats: str | FormatSections) -> str:
     EXECL_EPOCH = datetime(1899, 12, 30)
 
-    if not isinstance(formats, list):
+    if isinstance(formats, str):
         formats: FormatSections = parse_format(formats)
 
     date_format = formats[0]

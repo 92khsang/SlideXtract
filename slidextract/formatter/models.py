@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections import deque
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from enum import Enum, auto
 from typing import TypeAlias
 
@@ -18,31 +18,37 @@ class SectionPartType(str, Enum):
         RAW: Not processed
         SPACE: Space (= )
         TEXT: Text
+        NUMBER: Number (e.g., 0.00, #,##)
         TIME: Time (e.g., yyyy, mm, dd, hh, ss)
         AMPM_TIME: AM/PM
         ELAPSE_TIME: Elapsed time (e.g., [hh], [mm], [ss])
-        SCIENTIFIC: Scientific notation (e.g., 0.00E+00)
+        EXPONENT: Exponent (e.g., 0.00E+00)
         PERCENTAGE: Percentage (=%)
         COMMA: Comma (= \",\")
+        DOT: Dot (= .)
         UNDERSCORE: Underscore (=_)
         QUESTION_MARK: Question mark (=?)
-        ASTERISK: Asterisk (=*)
+        FRACTION: Fraction (= ?/?)
+        NUMBER_TEXT: Number text
     """
 
     RAW = auto()
     SPACE = auto()
     TEXT = auto()
+    NUMBER = auto()
     TIME = auto()
     MONTH_TIME = auto()
     MINUTE_TIME = auto()
     AMPM_TIME = auto()
     ELAPSE_TIME = auto()
-    SCIENTIFIC = auto()
+    EXPONENT = auto()
     PERCENTAGE = auto()
     COMMA = auto()
+    DOT = auto()
     UNDERSCORE = auto()
     QUESTION_MARK = auto()
-    ASTERISK = auto()
+    FRACTION = auto()
+    NUMBER_TEXT = auto()
 
     @classmethod
     def time_types(cls):
@@ -74,11 +80,19 @@ class SectionPart:
 
 @dataclass
 class FormatSection:
+    """
+    A section of a format string.
+
+    Attributes:
+        raw: The raw format string of this section.
+        parts: A list of parts in this section.
+    """
+
     raw: str
-    parts: deque[SectionPart] = field(default_factory=deque)
+    parts: deque[SectionPart]
 
     def __str__(self):
-        return f"raw: {self.raw}, parts: {[str(part) for part in self.parts]}"
+        return f"raw: '{self.raw}', parts: {[str(part) for part in self.parts]}"
 
 
 FormatSections: TypeAlias = list[FormatSection]
