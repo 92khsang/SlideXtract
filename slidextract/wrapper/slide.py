@@ -1,16 +1,18 @@
 from __future__ import annotations
 
+import weakref
+from _weakref import ProxyType
 from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from slidextract.core.logging import get_logger
-from slidextract.wrapper.models import SlideSize
 from slidextract.wrapper.shape import ShapeWrapper, ShapeFilter
 
 if TYPE_CHECKING:
     from logging import Logger
 
     from pptx.slide import Slide
+    from slidextract.wrapper import PresentationWrapper
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,7 +29,7 @@ class SlideFilter:
     shape_filter: ShapeFilter = field(default_factory=ShapeFilter)
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True)
 class SlideWrapper:
     """
     Wrapper for python-pptx Slide
@@ -35,40 +37,58 @@ class SlideWrapper:
     Attributes:
         slide: Original slide
         number: Number of the slide
-        size: Size of the slide
-        filter: Filter conditions for extracting shape
+        slide_filter: Filter conditions for extracting shape
         shapes: List of extracted shapes
         valid: Whether the slide is valid
     """
 
     slide: Slide
     number: int
-    size: SlideSize
-    filter: SlideFilter
+    slide_filter: SlideFilter
+    _presentation_proxy: weakref.ProxyType[PresentationWrapper]
 
     shapes: list[ShapeWrapper] = field(init=False)
     valid: bool = field(init=False)
 
-    _logger: Logger = field(default_factory=lambda: get_logger(__name__))
+    _logger: Logger = field(init=False)
 
-    def __post_init__(self):
+    def __init__(
+        self,
+        slide: Slide,
+        number: int,
+        slide_filter: SlideFilter,
+        _presentation_proxy: weakref.ProxyType[PresentationWrapper],
+    ):
+        object.__setattr__(self, "slide", slide)
+        object.__setattr__(self, "number", number)
+        object.__setattr__(self, "slide_filter", slide_filter)
+        object.__setattr__(self, "_presentation_proxy", _presentation_proxy)
 
         object.__setattr__(
             self,
             "shapes",
             [
-                ShapeWrapper(shape, self.size, self.filter.shape_filter)
+                ShapeWrapper(
+                    shape,
+                    self.slide_filter.shape_filter,
+                    _slide_proxy=weakref.proxy(self),
+                )
                 for shape in self.slide.shapes
             ],
         )
         object.__setattr__(self, "valid", self._validate())
+        object.__setattr__(self, "_logger", get_logger(__name__))
 
     def __getattr__(self, item):
         return getattr(self.slide, item)
 
     def _validate(self) -> bool:
-        return self.total_shapes >= self.filter.min_shapes
+        return self.total_shapes >= self.slide_filter.min_shapes
 
     @property
     def total_shapes(self) -> int:
         return len(self.shapes)
+
+    @property
+    def presentation(self) -> ProxyType[PresentationWrapper]:
+        return self._presentation_proxy

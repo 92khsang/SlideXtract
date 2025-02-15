@@ -1,9 +1,10 @@
 from __future__ import annotations
-from .presentation import PresentationWrapper
-from .slide import SlideWrapper
-from .shape import ShapeWrapper
-from .table import TableWrapper
+
 from .chart import ChartWrapper
+from .presentation import PresentationWrapper
+from .shape import ShapeWrapper
+from .slide import SlideWrapper
+from .table import TableWrapper
 
 __all__ = [
     "PresentationWrapper",

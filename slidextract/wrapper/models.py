@@ -1,12 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import NamedTuple
-
-
-class SlideSize(NamedTuple):
-    width: int
-    height: int
 
 
 @dataclass(frozen=True, slots=True)

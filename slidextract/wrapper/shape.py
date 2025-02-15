@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import weakref
 from dataclasses import dataclass, field
 from typing import TypeAlias, TYPE_CHECKING
 
@@ -8,10 +9,11 @@ from pptx.shapes.group import GroupShape
 from pptx.shapes.shapetree import GroupShapes
 
 from slidextract.wrapper.chart import ChartWrapper
-from slidextract.wrapper.models import SlideSize, BBox
+from slidextract.wrapper.models import BBox
 from slidextract.wrapper.table import TableWrapper
 
 if TYPE_CHECKING:
+    from slidextract.wrapper import SlideWrapper
     from pptx.shapes.shapetree import _BaseGroupShapes
     from pptx.shapes.autoshape import Shape as AutoShape
     from pptx.shapes.base import BaseShape
@@ -47,15 +49,15 @@ class ShapeWrapper:
 
     Attributes:
         shape: Original shape
-        slide_size: Size of the slide
-        filter: Filter conditions for extracting shape
+        shape_filter: Filter conditions for extracting shape
         bbox: Bounding box of the shape
         valid: Whether the shape is valid
     """
 
     shape: Shape
-    slide_size: SlideSize
-    filter: ShapeFilter
+    shape_filter: ShapeFilter
+    _slide_proxy: weakref.ProxyType[SlideWrapper]
+
     bbox: BBox = field(init=False)
     valid: bool = field(init=False)
     table: TableWrapper | None = field(init=False)
@@ -64,7 +66,16 @@ class ShapeWrapper:
     _shapes: _BaseGroupShapes = field(init=False)
     _parent: Shape | Slide = field(init=False)
 
-    def __post_init__(self):
+    def __init__(
+        self,
+        shape: Shape,
+        shape_filter: ShapeFilter,
+        _slide_proxy: weakref.ProxyType[SlideWrapper],
+    ):
+        object.__setattr__(self, "shape", shape)
+        object.__setattr__(self, "shape_filter", shape_filter)
+        object.__setattr__(self, "_slide_proxy", _slide_proxy)
+
         object.__setattr__(self, "_shapes", getattr(self.shape, "_parent", None))
         object.__setattr__(self, "_parent", getattr(self._shapes, "_parent", None))
 
@@ -84,11 +95,11 @@ class ShapeWrapper:
 
     def _validate(self):
         return (
-            self.filter.min_width <= self.bbox.width
-            and self.filter.min_height <= self.bbox.height
-            and self.shape.shape_type not in self.filter.exclude_types
+            self.shape_filter.min_width <= self.bbox.width
+            and self.shape_filter.min_height <= self.bbox.height
+            and self.shape.shape_type not in self.shape_filter.exclude_types
             and (
-                self.filter.include_empty_textbox
+                self.shape_filter.include_empty_textbox
                 or not self.shape_type == MSO_SHAPE_TYPE.TEXT_BOX
                 or self.has_text
             )
@@ -106,8 +117,8 @@ class ShapeWrapper:
         width = int(float(self.shape.width) * scale_x)
         height = int(float(self.shape.height) * scale_y)
 
-        right = min(self.slide_size.width, left + width)
-        bottom = min(self.slide_size.height, top + height)
+        right = min(self.slide.presentation.slide_width, left + width)
+        bottom = min(self.slide.presentation.slide_height, top + height)
 
         return BBox(left, top, right, bottom)
 
@@ -152,6 +163,14 @@ class ShapeWrapper:
         if not isinstance(self.shape, GroupShape):
             return []
         return [
-            ShapeWrapper(child, self.slide_size, filter=self.filter)
+            ShapeWrapper(
+                shape=child,
+                shape_filter=self.shape_filter,
+                _slide_proxy=self._slide_ref,
+            )
             for child in self.shape.shapes
         ]
+
+    @property
+    def slide(self) -> weakref.ProxyType[SlideWrapper]:
+        return self._slide_proxy
