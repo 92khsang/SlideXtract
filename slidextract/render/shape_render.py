@@ -170,10 +170,6 @@ def render_chart(
     x_title = x_axis.axis_title.text_frame.text if x_axis.has_title else ""
     y_title = y_axis.axis_title.text_frame.text if y_axis.has_title else ""
 
-    value_format = (
-        y_axis.tick_labels.number_format if apply_number_format else "General"
-    )
-
     plot = chart.plots[0]
 
     categories = plot.categories
@@ -198,11 +194,19 @@ def render_chart(
     series_names: list[str] = []
     values: list[list[str]] = []
 
-    sections = parse_format(value_format)
     for plot in chart.plots:
         for series in plot.series:
+            number_format = (
+                series.data_labels.number_format
+                if apply_number_format
+                and getattr(series, "data_labels", None)
+                and series.data_labels.number_format_is_linked
+                else "General"
+            )
+            parsed_formats = parse_format(number_format)
+
             series_names.append(series.name)
-            row = [apply_format(v if v else 0, sections) for v in series.values]
+            row = [apply_format(v if v else 0, parsed_formats) for v in series.values]
             values.append(row)
 
     h_headers = (
@@ -226,8 +230,8 @@ def render_chart(
     if include_meta:
         buffer.append("<br>")
         meta_table = _build_table(
-            h_headers=["ChartType", "ValueFormat"],
-            values=[[chart_type, value_format]],
+            h_headers=["ChartType"],
+            values=[[chart_type]],
         )
         meta_table_html = _build_table_html(meta_table)
         buffer.extend(meta_table_html)
